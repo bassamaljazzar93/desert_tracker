@@ -1,0 +1,50 @@
+{
+  "name": "تتبع البر - Desert Tracker",
+  "short_name": "تتبع البر",
+  "description": "تطبيق تتبع الرحلات البرية في الصحراء",
+  "start_url": "/desert_tracker_demo.html",
+  "display": "standalone",
+  "background_color": "#1a1a1a",
+  "theme_color": "#4CAF50",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%234CAF50' width='192' height='192' rx='48'/><text y='145' font-size='120' fill='white' text-anchor='middle' x='96'>🗺️</text></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect fill='%234CAF50' width='512' height='512' rx='128'/><text y='390' font-size='320' fill='white' text-anchor='middle' x='256'>🗺️</text></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%234CAF50' width='192' height='192'/><text y='145' font-size='120' fill='white' text-anchor='middle' x='96'>🗺️</text></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["navigation", "travel", "utilities"],
+  "lang": "ar",
+  "dir": "rtl",
+  "scope": "/",
+  "screenshots": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 540 720'><rect fill='%231a1a1a' width='540' height='720'/><text y='360' font-size='80' fill='%234CAF50' text-anchor='middle' x='270'>تتبع البر</text></svg>",
+      "sizes": "540x720",
+      "type": "image/svg+xml",
+      "form_factor": "narrow"
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "features": [
+    "GPS tracking",
+    "Offline maps",
+    "Route saving",
+    "POI marking"
+  ]
+}
