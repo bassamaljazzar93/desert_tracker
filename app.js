@@ -271,7 +271,9 @@ function navigateTo(view) {
     
     // Update nav items
     document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-    event.target.closest('.nav-item').classList.add('active');
+    if (event && event.target) {
+        event.target.closest('.nav-item').classList.add('active');
+    }
     
     // Hide all containers
     document.getElementById('mapContainer').classList.remove('active');
@@ -283,7 +285,11 @@ function navigateTo(view) {
     switch(view) {
         case 'map':
             document.getElementById('mapContainer').classList.add('active');
-            if (map) map.invalidateSize();
+            if (map) {
+                setTimeout(() => {
+                    map.invalidateSize();
+                }, 100);
+            }
             break;
         case 'explore':
             document.getElementById('exploreContainer').classList.add('active');
@@ -302,44 +308,57 @@ function navigateTo(view) {
 
 // ==================== MAP ====================
 function initMap() {
-    map = L.map('map', {
-        zoomControl: false
-    }).setView([24.4539, 54.3773], 13);
-    
-    // Initialize all map layers
-    mapLayers.satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        attribution: '© Esri',
-        maxZoom: 19
-    });
-    
-    mapLayers.street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap',
-        maxZoom: 19
-    });
-    
-    mapLayers.terrain = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenTopoMap',
-        maxZoom: 17
-    });
-    
-    mapLayers.dark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '© CartoDB',
-        maxZoom: 19
-    });
-    
-    // Set default layer
-    currentMapLayer = mapLayers.satellite;
-    currentMapLayer.addTo(map);
+    try {
+        map = L.map('map', {
+            zoomControl: false,
+            preferCanvas: true
+        }).setView([24.4539, 54.3773], 13);
+        
+        // Initialize all map layers
+        mapLayers.satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: '© Esri',
+            maxZoom: 19
+        });
+        
+        mapLayers.street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap',
+            maxZoom: 19
+        });
+        
+        mapLayers.terrain = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenTopoMap',
+            maxZoom: 17
+        });
+        
+        mapLayers.dark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '© CartoDB',
+            maxZoom: 19
+        });
+        
+        // Set default layer
+        currentMapLayer = mapLayers.satellite;
+        currentMapLayer.addTo(map);
+        
+        // Fix map size issues
+        setTimeout(() => {
+            map.invalidateSize();
+        }, 100);
 
-    // Start watching position
-    if ("geolocation" in navigator) {
-        navigator.geolocation.watchPosition(
-            updatePosition,
-            handleError,
-            { enableHighAccuracy: true, maximumAge: 1000, timeout: 5000 }
-        );
-    } else {
-        showNotification('خطأ', 'المتصفح لا يدعم تحديد الموقع', 'error');
+        console.log('Map initialized successfully');
+
+        // Start watching position
+        if ("geolocation" in navigator) {
+            navigator.geolocation.watchPosition(
+                updatePosition,
+                handleError,
+                { enableHighAccuracy: true, maximumAge: 1000, timeout: 5000 }
+            );
+        } else {
+            showNotification('خطأ', 'المتصفح لا يدعم تحديد الموقع', 'error');
+        }
+    } catch (error) {
+        console.error('Map initialization error:', error);
+        showNotification('خطأ', 'فشل تحميل الخريطة', 'error');
     }
 }
 
