@@ -1,0 +1,71 @@
+{
+  "name": "desert-tracker",
+  "version": "1.0.0",
+  "description": "Progressive Web App for tracking desert trips and off-road adventures",
+  "main": "index.html",
+  "scripts": {
+    "start": "python3 -m http.server 8000",
+    "serve": "npx http-server -p 8000 -o",
+    "deploy:netlify": "netlify deploy --prod",
+    "deploy:vercel": "vercel --prod",
+    "deploy:firebase": "firebase deploy",
+    "lint": "eslint app.js",
+    "test": "echo \"No tests yet\" && exit 0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/desert-tracker.git"
+  },
+  "keywords": [
+    "pwa",
+    "gps",
+    "tracking",
+    "desert",
+    "off-road",
+    "maps",
+    "leaflet",
+    "geocoding",
+    "navigation",
+    "outdoor",
+    "uae",
+    "emirates",
+    "safari",
+    "adventure"
+  ],
+  "author": {
+    "name": "Bassam Jalghoum",
+    "email": "bassam@engineer.com",
+    "url": "https://bassam.engineer"
+  },
+  "contributors": [],
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/yourusername/desert-tracker/issues"
+  },
+  "homepage": "https://github.com/yourusername/desert-tracker#readme",
+  "dependencies": {},
+  "devDependencies": {
+    "eslint": "^8.0.0",
+    "http-server": "^14.0.0"
+  },
+  "engines": {
+    "node": ">=14.0.0",
+    "npm": ">=6.0.0"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead",
+    "iOS >= 12",
+    "Android >= 5"
+  ],
+  "pwa": {
+    "name": "تتبع البر - Desert Tracker",
+    "short_name": "تتبع البر",
+    "description": "Track your desert trips with GPS accuracy",
+    "theme_color": "#4CAF50",
+    "background_color": "#1a1a1a",
+    "display": "standalone",
+    "orientation": "portrait-primary"
+  }
+}

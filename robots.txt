@@ -1,0 +1,20 @@
+# robots.txt for Desert Tracker
+
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://yourusername.github.io/desert-tracker/sitemap.xml
+
+# Disallow admin or private areas (if any)
+# Disallow: /admin/
+# Disallow: /private/
+
+# Crawl-delay (optional, in seconds)
+Crawl-delay: 10
+
+# Allow all bots to access everything
+Allow: /index.html
+Allow: /app.js
+Allow: /manifest.json
+Allow: /sw.js
