@@ -1,0 +1,1871 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#4CAF50">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="تتبع البر">
+    <meta name="description" content="تطبيق تتبع الرحلات البرية - Desert Tracker">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%234CAF50' width='100' height='100'/><text y='75' font-size='70' fill='white' text-anchor='middle' x='50'>🗺️</text></svg>">
+    <title>تتبع البر - Desert Tracker</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary: #4CAF50;
+            --secondary: #2196F3;
+            --accent: #FF9800;
+            --danger: #f44336;
+            --dark: #1a1a1a;
+            --dark-light: #2a2a2a;
+            --gray: #666;
+            --gray-light: #999;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--dark);
+            color: white;
+            overflow: hidden;
+        }
+
+        /* ==================== AUTH SCREEN ==================== */
+        .auth-screen {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d5016 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            transition: opacity 0.3s;
+        }
+
+        .auth-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .auth-container {
+            background: rgba(26, 26, 26, 0.95);
+            padding: 40px;
+            border-radius: 20px;
+            max-width: 400px;
+            width: 90%;
+            border: 2px solid var(--primary);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+
+        .auth-logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .auth-logo h1 {
+            font-size: 32px;
+            color: var(--primary);
+            margin: 10px 0;
+        }
+
+        .auth-logo p {
+            color: var(--gray-light);
+            font-size: 14px;
+        }
+
+        .auth-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        .auth-tab {
+            flex: 1;
+            padding: 12px;
+            background: transparent;
+            border: 2px solid var(--gray);
+            border-radius: 10px;
+            color: var(--gray);
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 16px;
+        }
+
+        .auth-tab.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+
+        .auth-form {
+            display: none;
+        }
+
+        .auth-form.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--gray-light);
+            font-size: 14px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255,255,255,0.05);
+            border: 2px solid var(--gray);
+            border-radius: 10px;
+            color: white;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .btn-auth {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, var(--primary), #45a049);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .btn-auth:hover {
+            transform: translateY(-2px);
+        }
+
+        .demo-note {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255, 152, 0, 0.1);
+            border: 1px solid var(--accent);
+            border-radius: 10px;
+            text-align: center;
+            font-size: 14px;
+            color: var(--accent);
+        }
+
+        /* ==================== MAIN APP ==================== */
+        .app-container {
+            position: fixed;
+            inset: 0;
+            display: none;
+        }
+
+        .app-container.active {
+            display: block;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* ==================== HEADER ==================== */
+        .app-header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(26, 26, 26, 0.95);
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 1000;
+            border-bottom: 2px solid var(--primary);
+            backdrop-filter: blur(10px);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .app-logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-btn {
+            padding: 8px 15px;
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid var(--primary);
+            border-radius: 8px;
+            color: var(--primary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .header-btn:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .header-btn.premium {
+            background: linear-gradient(135deg, var(--accent), #f57c00);
+            border: none;
+            color: white;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* ==================== SIDEBAR ==================== */
+        .sidebar {
+            position: absolute;
+            top: 70px;
+            right: -350px;
+            width: 350px;
+            height: calc(100% - 70px);
+            background: rgba(26, 26, 26, 0.98);
+            border-left: 2px solid var(--primary);
+            transition: right 0.3s;
+            z-index: 999;
+            overflow-y: auto;
+            backdrop-filter: blur(10px);
+        }
+
+        .sidebar.open {
+            right: 0;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--gray);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .sidebar-header h2 {
+            font-size: 20px;
+            color: var(--primary);
+        }
+
+        .btn-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .sidebar-content {
+            padding: 20px;
+        }
+
+        .menu-item {
+            padding: 15px;
+            margin: 10px 0;
+            background: rgba(76, 175, 80, 0.1);
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: all 0.3s;
+        }
+
+        .menu-item:hover {
+            background: rgba(76, 175, 80, 0.2);
+        }
+
+        .menu-item i {
+            width: 30px;
+            text-align: center;
+            color: var(--primary);
+            font-size: 20px;
+        }
+
+        .menu-item-content h3 {
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+
+        .menu-item-content p {
+            font-size: 12px;
+            color: var(--gray-light);
+        }
+
+        /* ==================== STATS PANEL ==================== */
+        .stats-panel {
+            position: absolute;
+            top: 90px;
+            left: 20px;
+            background: rgba(26, 26, 26, 0.95);
+            padding: 20px;
+            border-radius: 15px;
+            min-width: 280px;
+            border: 2px solid var(--primary);
+            backdrop-filter: blur(10px);
+            z-index: 900;
+        }
+
+        .stats-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--gray);
+        }
+
+        .stats-header h3 {
+            color: var(--primary);
+            font-size: 18px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            margin: 8px 0;
+            background: rgba(76, 175, 80, 0.1);
+            border-radius: 10px;
+        }
+
+        .stat-label {
+            color: var(--gray-light);
+            font-size: 14px;
+        }
+
+        .stat-value {
+            color: var(--primary);
+            font-size: 20px;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* ==================== CONTROLS ==================== */
+        .main-controls {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(26, 26, 26, 0.95);
+            padding: 20px;
+            border-radius: 25px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            border: 2px solid var(--primary);
+            backdrop-filter: blur(10px);
+            z-index: 900;
+        }
+
+        .track-button {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            font-size: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .track-button.start {
+            background: linear-gradient(135deg, var(--primary), #45a049);
+            color: white;
+        }
+
+        .track-button.stop {
+            background: linear-gradient(135deg, var(--danger), #d32f2f);
+            color: white;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .control-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(76, 175, 80, 0.2);
+            color: var(--primary);
+            font-size: 24px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .control-btn:hover {
+            background: var(--primary);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        /* ==================== MODAL ==================== */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--dark);
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 90%;
+            max-height: 90%;
+            overflow-y: auto;
+            border: 2px solid var(--primary);
+            min-width: 400px;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--gray);
+        }
+
+        .modal-header h2 {
+            color: var(--primary);
+            font-size: 24px;
+        }
+
+        .modal-body {
+            margin: 20px 0;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid var(--gray);
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: var(--gray);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        /* ==================== TRACK LIST ==================== */
+        .track-list {
+            display: grid;
+            gap: 15px;
+        }
+
+        .track-card {
+            background: rgba(76, 175, 80, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid rgba(76, 175, 80, 0.3);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .track-card:hover {
+            background: rgba(76, 175, 80, 0.2);
+            border-color: var(--primary);
+        }
+
+        .track-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 10px;
+        }
+
+        .track-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+        }
+
+        .track-date {
+            font-size: 12px;
+            color: var(--gray-light);
+        }
+
+        .track-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .track-stat {
+            text-align: center;
+        }
+
+        .track-stat-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .track-stat-label {
+            font-size: 11px;
+            color: var(--gray-light);
+            margin-top: 2px;
+        }
+
+        .track-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .track-actions button {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        /* ==================== STATUS INDICATOR ==================== */
+        .status-indicator {
+            position: absolute;
+            top: 90px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(76, 175, 80, 0.95);
+            color: white;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-weight: bold;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            z-index: 1000;
+            animation: fadeIn 0.3s;
+        }
+
+        .status-indicator.show {
+            display: flex;
+        }
+
+        .status-indicator i {
+            animation: blink 1.5s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        /* ==================== NOTIFICATION ==================== */
+        .notification {
+            position: fixed;
+            top: 90px;
+            right: 20px;
+            background: rgba(26, 26, 26, 0.98);
+            padding: 15px 20px;
+            border-radius: 10px;
+            border-left: 4px solid var(--primary);
+            min-width: 300px;
+            z-index: 9999;
+            transform: translateX(400px);
+            transition: transform 0.3s;
+            backdrop-filter: blur(10px);
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .notification-title {
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .notification-message {
+            font-size: 14px;
+            color: var(--gray-light);
+        }
+
+        /* ==================== LOADING ==================== */
+        .loading {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .loading.show {
+            display: flex;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid var(--gray);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* ==================== MAP CONTROLS ==================== */
+        .map-controls {
+            position: absolute;
+            bottom: 140px;
+            left: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 900;
+        }
+
+        .map-control-btn {
+            width: 50px;
+            height: 50px;
+            background: rgba(26, 26, 26, 0.95);
+            border: 2px solid var(--primary);
+            border-radius: 10px;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            backdrop-filter: blur(10px);
+        }
+
+        .map-control-btn:hover {
+            background: var(--primary);
+            transform: scale(1.1);
+        }
+
+        .map-control-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Map Type Selector */
+        .map-type-selector {
+            position: absolute;
+            bottom: 140px;
+            right: 20px;
+            background: rgba(26, 26, 26, 0.95);
+            border: 2px solid var(--primary);
+            border-radius: 15px;
+            padding: 15px;
+            z-index: 900;
+            backdrop-filter: blur(10px);
+            min-width: 200px;
+        }
+
+        .map-type-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--gray);
+        }
+
+        .map-type-header h3 {
+            font-size: 16px;
+            color: var(--primary);
+        }
+
+        .map-type-option {
+            padding: 12px;
+            margin: 5px 0;
+            background: rgba(76, 175, 80, 0.1);
+            border: 2px solid transparent;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s;
+        }
+
+        .map-type-option:hover {
+            background: rgba(76, 175, 80, 0.2);
+        }
+
+        .map-type-option.active {
+            background: rgba(76, 175, 80, 0.3);
+            border-color: var(--primary);
+        }
+
+        .map-type-option i {
+            font-size: 20px;
+            color: var(--primary);
+        }
+
+        .map-type-option span {
+            font-size: 14px;
+        }
+
+        /* Install Banner */
+        .install-banner {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(135deg, var(--primary), #45a049);
+            padding: 15px 20px;
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 2000;
+            animation: slideUp 0.3s;
+        }
+
+        .install-banner.show {
+            display: flex;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        .install-banner-content {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .install-banner-content i {
+            font-size: 32px;
+        }
+
+        .install-banner-text h3 {
+            font-size: 16px;
+            margin-bottom: 3px;
+        }
+
+        .install-banner-text p {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .install-banner button {
+            padding: 10px 20px;
+            background: white;
+            color: var(--primary);
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .btn-dismiss {
+            background: transparent !important;
+            color: white !important;
+            padding: 5px 10px !important;
+        }
+
+        /* ==================== RESPONSIVE ==================== */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                right: -100%;
+            }
+
+            .stats-panel {
+                width: calc(100% - 40px);
+                left: 20px;
+                min-width: auto;
+            }
+
+            .main-controls {
+                width: calc(100% - 40px);
+                padding: 15px;
+            }
+
+            .track-button {
+                width: 70px;
+                height: 70px;
+                font-size: 30px;
+            }
+
+            .control-btn {
+                width: 50px;
+                height: 50px;
+                font-size: 20px;
+            }
+
+            .modal-content {
+                min-width: auto;
+                width: 95%;
+            }
+
+            .map-controls {
+                bottom: 120px;
+            }
+
+            .map-type-selector {
+                bottom: 120px;
+                right: 10px;
+                min-width: 180px;
+            }
+
+            .install-banner-content {
+                gap: 10px;
+            }
+
+            .install-banner-content i {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- ==================== AUTH SCREEN ==================== -->
+    <div class="auth-screen" id="authScreen">
+        <div class="auth-container">
+            <div class="auth-logo">
+                <i class="fas fa-map-marked-alt" style="font-size: 48px; color: var(--primary);"></i>
+                <h1>تتبع البر</h1>
+                <p>Desert Tracker</p>
+            </div>
+
+            <div class="auth-tabs">
+                <button class="auth-tab active" onclick="switchAuthTab('login')">تسجيل دخول</button>
+                <button class="auth-tab" onclick="switchAuthTab('register')">حساب جديد</button>
+            </div>
+
+            <form class="auth-form active" id="loginForm" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label>البريد الإلكتروني</label>
+                    <input type="email" placeholder="example@email.com" required>
+                </div>
+                <div class="form-group">
+                    <label>كلمة المرور</label>
+                    <input type="password" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn-auth">
+                    <i class="fas fa-sign-in-alt"></i> دخول
+                </button>
+            </form>
+
+            <form class="auth-form" id="registerForm" onsubmit="handleRegister(event)">
+                <div class="form-group">
+                    <label>الاسم الكامل</label>
+                    <input type="text" placeholder="محمد أحمد" required>
+                </div>
+                <div class="form-group">
+                    <label>البريد الإلكتروني</label>
+                    <input type="email" placeholder="example@email.com" required>
+                </div>
+                <div class="form-group">
+                    <label>رقم الهاتف</label>
+                    <input type="tel" placeholder="+971 50 123 4567" required>
+                </div>
+                <div class="form-group">
+                    <label>كلمة المرور</label>
+                    <input type="password" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn-auth">
+                    <i class="fas fa-user-plus"></i> إنشاء حساب
+                </button>
+            </form>
+
+            <div class="demo-note">
+                <i class="fas fa-info-circle"></i>
+                هذا ديمو تجريبي - يمكنك الدخول بأي بيانات
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MAIN APP ==================== -->
+    <div class="app-container" id="appContainer">
+        <!-- Header -->
+        <div class="app-header">
+            <div class="header-left">
+                <div class="app-logo">
+                    <i class="fas fa-map-marked-alt"></i> تتبع البر
+                </div>
+            </div>
+            <div class="header-right">
+                <button class="header-btn premium" onclick="showUpgradeModal()">
+                    <i class="fas fa-crown"></i>
+                    <span>ترقية Pro</span>
+                </button>
+                <button class="header-btn" onclick="toggleSidebar()">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="user-avatar" onclick="toggleSidebar()">
+                    <i class="fas fa-user"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Map -->
+        <div id="map"></div>
+
+        <!-- Map Controls (Zoom) -->
+        <div class="map-controls">
+            <button class="map-control-btn" onclick="zoomIn()" title="تكبير">
+                <i class="fas fa-plus"></i>
+            </button>
+            <button class="map-control-btn" onclick="zoomOut()" title="تصغير">
+                <i class="fas fa-minus"></i>
+            </button>
+            <button class="map-control-btn" onclick="centerMap()" title="موقعي">
+                <i class="fas fa-location-arrow"></i>
+            </button>
+        </div>
+
+        <!-- Map Type Selector -->
+        <div class="map-type-selector">
+            <div class="map-type-header">
+                <h3>نوع الخريطة</h3>
+                <i class="fas fa-map"></i>
+            </div>
+            <div class="map-type-option active" onclick="changeMapType('satellite')">
+                <i class="fas fa-satellite"></i>
+                <span>أقمار صناعية</span>
+            </div>
+            <div class="map-type-option" onclick="changeMapType('street')">
+                <i class="fas fa-road"></i>
+                <span>خريطة الشوارع</span>
+            </div>
+            <div class="map-type-option" onclick="changeMapType('terrain')">
+                <i class="fas fa-mountain"></i>
+                <span>التضاريس</span>
+            </div>
+            <div class="map-type-option" onclick="changeMapType('dark')">
+                <i class="fas fa-moon"></i>
+                <span>الوضع الليلي</span>
+            </div>
+        </div>
+
+        <!-- Stats Panel -->
+        <div class="stats-panel">
+            <div class="stats-header">
+                <i class="fas fa-chart-line"></i>
+                <h3>إحصائيات الرحلة</h3>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">المسافة</span>
+                <span class="stat-value" id="distance">0.0 كم</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">الوقت</span>
+                <span class="stat-value" id="duration">00:00:00</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">السرعة</span>
+                <span class="stat-value" id="speed">0 كم/س</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">النقاط</span>
+                <span class="stat-value" id="points">0</span>
+            </div>
+        </div>
+
+        <!-- Status Indicator -->
+        <div class="status-indicator" id="statusIndicator">
+            <i class="fas fa-circle"></i>
+            جاري التتبع...
+        </div>
+
+        <!-- Main Controls -->
+        <div class="main-controls">
+            <button class="control-btn" onclick="showTracksModal()" title="المسارات المحفوظة">
+                <i class="fas fa-folder"></i>
+            </button>
+            <button class="control-btn" onclick="centerMap()" title="موقعي">
+                <i class="fas fa-crosshairs"></i>
+            </button>
+            <button class="track-button start" id="trackButton" onclick="toggleTracking()">
+                <i class="fas fa-play"></i>
+            </button>
+            <button class="control-btn" onclick="addPOI()" title="إضافة علامة">
+                <i class="fas fa-map-pin"></i>
+            </button>
+            <button class="control-btn" onclick="showSaveModal()" title="حفظ">
+                <i class="fas fa-save"></i>
+            </button>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2>القائمة الرئيسية</h2>
+                <button class="btn-close" onclick="toggleSidebar()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="sidebar-content">
+                <div class="menu-item" onclick="showTracksModal()">
+                    <i class="fas fa-folder"></i>
+                    <div class="menu-item-content">
+                        <h3>المسارات المحفوظة</h3>
+                        <p>عرض جميع الرحلات السابقة</p>
+                    </div>
+                </div>
+                <div class="menu-item" onclick="showGroupsModal()">
+                    <i class="fas fa-users"></i>
+                    <div class="menu-item-content">
+                        <h3>المجموعات</h3>
+                        <p>التتبع الجماعي مع الأصدقاء</p>
+                    </div>
+                </div>
+                <div class="menu-item" onclick="showStatsModal()">
+                    <i class="fas fa-chart-bar"></i>
+                    <div class="menu-item-content">
+                        <h3>الإحصائيات</h3>
+                        <p>إحصائياتك الكاملة</p>
+                    </div>
+                </div>
+                <div class="menu-item" onclick="showSettingsModal()">
+                    <i class="fas fa-cog"></i>
+                    <div class="menu-item-content">
+                        <h3>الإعدادات</h3>
+                        <p>تخصيص التطبيق</p>
+                    </div>
+                </div>
+                <div class="menu-item" onclick="showUpgradeModal()">
+                    <i class="fas fa-crown"></i>
+                    <div class="menu-item-content">
+                        <h3>الترقية إلى Pro</h3>
+                        <p>احصل على مميزات إضافية</p>
+                    </div>
+                </div>
+                <div class="menu-item" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <div class="menu-item-content">
+                        <h3>تسجيل خروج</h3>
+                        <p>الخروج من الحساب</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MODALS ==================== -->
+    
+    <!-- Save Track Modal -->
+    <div class="modal" id="saveModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-save"></i> حفظ المسار</h2>
+                <button class="btn-close" onclick="closeSaveModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>اسم المسار</label>
+                    <input type="text" id="trackName" placeholder="مثال: رحلة ليوا">
+                </div>
+                <div class="form-group">
+                    <label>وصف الرحلة (اختياري)</label>
+                    <textarea id="trackDescription" rows="3" style="width: 100%; padding: 10px; background: rgba(255,255,255,0.05); border: 2px solid var(--gray); border-radius: 10px; color: white; resize: vertical;" placeholder="أضف وصفاً لرحلتك..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="saveTrack()">
+                    <i class="fas fa-check"></i> حفظ
+                </button>
+                <button class="btn btn-secondary" onclick="closeSaveModal()">
+                    إلغاء
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tracks Modal -->
+    <div class="modal" id="tracksModal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-folder"></i> المسارات المحفوظة</h2>
+                <button class="btn-close" onclick="closeTracksModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="track-list" id="tracksList">
+                    <!-- Tracks will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Notification -->
+    <div class="notification" id="notification">
+        <div class="notification-header">
+            <span class="notification-title" id="notificationTitle">إشعار</span>
+            <button class="btn-close" onclick="hideNotification()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="notification-message" id="notificationMessage">
+            رسالة الإشعار
+        </div>
+    </div>
+
+    <!-- Install Banner -->
+    <div class="install-banner" id="installBanner">
+        <div class="install-banner-content">
+            <i class="fas fa-download"></i>
+            <div class="install-banner-text">
+                <h3>ثبت التطبيق</h3>
+                <p>استخدم التطبيق بدون متصفح</p>
+            </div>
+        </div>
+        <div>
+            <button onclick="installApp()">
+                <i class="fas fa-plus"></i> تثبيت
+            </button>
+            <button class="btn-dismiss" onclick="dismissInstallBanner()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <script>
+        // ==================== GLOBAL STATE ====================
+        let map;
+        let isTracking = false;
+        let currentTrack = [];
+        let trackPolyline = null;
+        let currentMarker = null;
+        let currentPosition = null;
+        let startTime = null;
+        let trackingInterval = null;
+        let durationInterval = null;
+        let totalDistance = 0;
+        let poiMarkers = [];
+        let savedTracks = [];
+        let currentUser = null;
+        let deferredPrompt = null;
+        
+        // Map layers
+        let currentMapLayer = null;
+        const mapLayers = {
+            satellite: null,
+            street: null,
+            terrain: null,
+            dark: null
+        };
+
+        // ==================== INITIALIZATION ====================
+        function initApp() {
+            // Check if user is logged in
+            currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+            
+            if (!currentUser) {
+                document.getElementById('authScreen').classList.remove('hidden');
+            } else {
+                startApp();
+            }
+            
+            // PWA Install prompt
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                document.getElementById('installBanner').classList.add('show');
+            });
+            
+            // Register Service Worker
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('sw.js').catch(() => {
+                    console.log('Service Worker registration failed');
+                });
+            }
+        }
+
+        function startApp() {
+            document.getElementById('authScreen').classList.add('hidden');
+            document.getElementById('appContainer').classList.add('active');
+            
+            // Initialize map
+            setTimeout(() => {
+                initMap();
+                loadSavedTracks();
+                showNotification('مرحباً!', 'تم تسجيل الدخول بنجاح');
+            }, 300);
+        }
+
+        // ==================== AUTH ====================
+        function switchAuthTab(tab) {
+            document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+            
+            if (tab === 'login') {
+                document.querySelectorAll('.auth-tab')[0].classList.add('active');
+                document.getElementById('loginForm').classList.add('active');
+            } else {
+                document.querySelectorAll('.auth-tab')[1].classList.add('active');
+                document.getElementById('registerForm').classList.add('active');
+            }
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            showLoading();
+            
+            setTimeout(() => {
+                currentUser = {
+                    name: 'مستخدم تجريبي',
+                    email: 'demo@deserttracker.ae',
+                    plan: 'free'
+                };
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                hideLoading();
+                startApp();
+            }, 1000);
+            
+            return false;
+        }
+
+        function handleRegister(e) {
+            e.preventDefault();
+            showLoading();
+            
+            setTimeout(() => {
+                currentUser = {
+                    name: e.target[0].value,
+                    email: e.target[1].value,
+                    plan: 'free'
+                };
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                hideLoading();
+                startApp();
+            }, 1000);
+            
+            return false;
+        }
+
+        function logout() {
+            if (confirm('هل تريد تسجيل الخروج؟')) {
+                localStorage.removeItem('currentUser');
+                location.reload();
+            }
+        }
+
+        // ==================== MAP ====================
+        function initMap() {
+            map = L.map('map', {
+                zoomControl: false // نخفي الأزرار الافتراضية
+            }).setView([24.4539, 54.3773], 13);
+            
+            // Initialize all map layers
+            mapLayers.satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: '© Esri',
+                maxZoom: 19
+            });
+            
+            mapLayers.street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap',
+                maxZoom: 19
+            });
+            
+            mapLayers.terrain = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenTopoMap',
+                maxZoom: 17
+            });
+            
+            mapLayers.dark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '© CartoDB',
+                maxZoom: 19
+            });
+            
+            // Set default layer
+            currentMapLayer = mapLayers.satellite;
+            currentMapLayer.addTo(map);
+
+            // Start watching position
+            if ("geolocation" in navigator) {
+                navigator.geolocation.watchPosition(
+                    updatePosition,
+                    handleError,
+                    { enableHighAccuracy: true, maximumAge: 1000, timeout: 5000 }
+                );
+            } else {
+                showNotification('خطأ', 'المتصفح لا يدعم تحديد الموقع', 'error');
+            }
+        }
+        
+        function changeMapType(type) {
+            // Remove current layer
+            if (currentMapLayer) {
+                map.removeLayer(currentMapLayer);
+            }
+            
+            // Add new layer
+            currentMapLayer = mapLayers[type];
+            currentMapLayer.addTo(map);
+            
+            // Update UI
+            document.querySelectorAll('.map-type-option').forEach(option => {
+                option.classList.remove('active');
+            });
+            event.target.closest('.map-type-option').classList.add('active');
+            
+            showNotification('تم التغيير', `تم تغيير الخريطة إلى: ${type === 'satellite' ? 'أقمار صناعية' : type === 'street' ? 'الشوارع' : type === 'terrain' ? 'التضاريس' : 'الوضع الليلي'}`);
+        }
+        
+        function zoomIn() {
+            map.zoomIn();
+        }
+        
+        function zoomOut() {
+            map.zoomOut();
+        }
+
+        function updatePosition(position) {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+            currentPosition = [lat, lon];
+
+            // Update marker
+            if (currentMarker) {
+                currentMarker.setLatLng(currentPosition);
+            } else {
+                currentMarker = L.marker(currentPosition, {
+                    icon: L.divIcon({
+                        className: 'current-location',
+                        html: '<div style="background: #4CAF50; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.5);"></div>',
+                        iconSize: [20, 20]
+                    })
+                }).addTo(map);
+            }
+
+            // Add to track if tracking
+            if (isTracking) {
+                if (currentTrack.length > 0) {
+                    const lastPoint = currentTrack[currentTrack.length - 1];
+                    const dist = calculateDistance(
+                        [lastPoint.lat, lastPoint.lon],
+                        currentPosition
+                    );
+                    totalDistance += dist;
+                }
+                
+                currentTrack.push({
+                    lat: lat,
+                    lon: lon,
+                    timestamp: Date.now(),
+                    speed: position.coords.speed || 0
+                });
+
+                updateTrackLine();
+                updateStats();
+            }
+
+            // Update speed
+            if (position.coords.speed) {
+                const speedKmh = (position.coords.speed * 3.6).toFixed(1);
+                document.getElementById('speed').textContent = speedKmh + ' كم/س';
+            }
+        }
+
+        function handleError(error) {
+            console.error("GPS Error:", error.message);
+        }
+
+        function centerMap() {
+            if (currentPosition) {
+                map.setView(currentPosition, 15);
+                showNotification('تم', 'تم توسيط الخريطة على موقعك');
+            }
+        }
+
+        // ==================== TRACKING ====================
+        function toggleTracking() {
+            isTracking = !isTracking;
+            const button = document.getElementById('trackButton');
+            const status = document.getElementById('statusIndicator');
+
+            if (isTracking) {
+                // Start tracking
+                button.classList.remove('start');
+                button.classList.add('stop');
+                button.innerHTML = '<i class="fas fa-pause"></i>';
+                status.classList.add('show');
+                startTime = Date.now();
+                
+                if (durationInterval) clearInterval(durationInterval);
+                durationInterval = setInterval(updateDuration, 1000);
+                
+                showNotification('بدأ التتبع', 'تم بدء تتبع مسارك');
+            } else {
+                // Stop tracking
+                button.classList.remove('stop');
+                button.classList.add('start');
+                button.innerHTML = '<i class="fas fa-play"></i>';
+                status.classList.remove('show');
+                
+                if (durationInterval) {
+                    clearInterval(durationInterval);
+                    durationInterval = null;
+                }
+                
+                if (currentTrack.length > 0) {
+                    showSaveModal();
+                }
+            }
+        }
+
+        function updateTrackLine() {
+            if (trackPolyline) {
+                map.removeLayer(trackPolyline);
+            }
+
+            const latlngs = currentTrack.map(p => [p.lat, p.lon]);
+            trackPolyline = L.polyline(latlngs, {
+                color: '#4CAF50',
+                weight: 4,
+                opacity: 0.8
+            }).addTo(map);
+        }
+
+        function updateStats() {
+            document.getElementById('distance').textContent = totalDistance.toFixed(2) + ' كم';
+            document.getElementById('points').textContent = currentTrack.length;
+        }
+
+        function updateDuration() {
+            if (startTime) {
+                const elapsed = Date.now() - startTime;
+                const hours = Math.floor(elapsed / 3600000);
+                const minutes = Math.floor((elapsed % 3600000) / 60000);
+                const seconds = Math.floor((elapsed % 60000) / 1000);
+                
+                document.getElementById('duration').textContent = 
+                    `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            }
+        }
+
+        function calculateDistance(point1, point2) {
+            const R = 6371;
+            const dLat = (point2[0] - point1[0]) * Math.PI / 180;
+            const dLon = (point2[1] - point1[1]) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                     Math.cos(point1[0] * Math.PI / 180) * Math.cos(point2[0] * Math.PI / 180) *
+                     Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        // ==================== POI ====================
+        function addPOI() {
+            if (!currentPosition) {
+                showNotification('تنبيه', 'يرجى الانتظار حتى يتم تحديد موقعك', 'warning');
+                return;
+            }
+            
+            const name = prompt('اسم النقطة:', 'نقطة مهمة');
+            if (!name) return;
+
+            const marker = L.marker(currentPosition, {
+                icon: L.divIcon({
+                    className: 'poi-marker',
+                    html: '<div style="background: #FF9800; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 2px 10px rgba(0,0,0,0.3);">📍</div>',
+                    iconSize: [30, 30]
+                })
+            }).addTo(map);
+
+            marker.bindPopup(`<b style="color: #4CAF50;">${name}</b><br>${new Date().toLocaleString('ar')}`);
+            marker.openPopup();
+
+            poiMarkers.push({
+                marker: marker,
+                name: name,
+                position: currentPosition,
+                timestamp: Date.now()
+            });
+
+            showNotification('تمت الإضافة', `تم إضافة علامة: ${name}`);
+        }
+
+        // ==================== SAVE TRACK ====================
+        function showSaveModal() {
+            if (currentTrack.length === 0) {
+                showNotification('تنبيه', 'لا يوجد مسار لحفظه', 'warning');
+                return;
+            }
+            document.getElementById('saveModal').classList.add('show');
+        }
+
+        function closeSaveModal() {
+            document.getElementById('saveModal').classList.remove('show');
+        }
+
+        function saveTrack() {
+            const name = document.getElementById('trackName').value || 'رحلة بدون اسم';
+            const description = document.getElementById('trackDescription').value || '';
+
+            const track = {
+                id: Date.now(),
+                name: name,
+                description: description,
+                points: currentTrack,
+                distance: totalDistance,
+                duration: startTime ? Date.now() - startTime : 0,
+                date: new Date().toISOString(),
+                pois: poiMarkers.length
+            };
+
+            savedTracks.push(track);
+            localStorage.setItem('tracks', JSON.stringify(savedTracks));
+
+            showNotification('تم الحفظ', `تم حفظ المسار: ${name}`);
+            closeSaveModal();
+            
+            // Reset current track
+            currentTrack = [];
+            totalDistance = 0;
+            if (trackPolyline) {
+                map.removeLayer(trackPolyline);
+                trackPolyline = null;
+            }
+            updateStats();
+            document.getElementById('duration').textContent = '00:00:00';
+        }
+
+        // ==================== TRACKS MODAL ====================
+        function showTracksModal() {
+            loadSavedTracks();
+            const list = document.getElementById('tracksList');
+            
+            if (savedTracks.length === 0) {
+                list.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--gray-light);"><i class="fas fa-folder-open" style="font-size: 48px; margin-bottom: 20px;"></i><p>لا توجد مسارات محفوظة</p></div>';
+            } else {
+                list.innerHTML = savedTracks.map(track => `
+                    <div class="track-card">
+                        <div class="track-card-header">
+                            <div>
+                                <div class="track-name">${track.name}</div>
+                                <div class="track-date">${new Date(track.date).toLocaleDateString('ar')}</div>
+                            </div>
+                        </div>
+                        <div class="track-stats">
+                            <div class="track-stat">
+                                <div class="track-stat-value">${track.distance.toFixed(1)}</div>
+                                <div class="track-stat-label">كم</div>
+                            </div>
+                            <div class="track-stat">
+                                <div class="track-stat-value">${Math.floor(track.duration / 60000)}</div>
+                                <div class="track-stat-label">دقيقة</div>
+                            </div>
+                            <div class="track-stat">
+                                <div class="track-stat-value">${track.points.length}</div>
+                                <div class="track-stat-label">نقطة</div>
+                            </div>
+                        </div>
+                        <div class="track-actions">
+                            <button onclick="viewTrack(${track.id})" style="background: var(--primary); color: white;">
+                                <i class="fas fa-eye"></i> عرض
+                            </button>
+                            <button onclick="shareTrack(${track.id})" style="background: var(--secondary); color: white;">
+                                <i class="fas fa-share"></i> مشاركة
+                            </button>
+                            <button onclick="deleteTrack(${track.id})" style="background: var(--danger); color: white;">
+                                <i class="fas fa-trash"></i> حذف
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            
+            document.getElementById('tracksModal').classList.add('show');
+        }
+
+        function closeTracksModal() {
+            document.getElementById('tracksModal').classList.remove('show');
+        }
+
+        function loadSavedTracks() {
+            savedTracks = JSON.parse(localStorage.getItem('tracks') || '[]');
+        }
+
+        function viewTrack(trackId) {
+            const track = savedTracks.find(t => t.id === trackId);
+            if (!track) return;
+
+            closeTracksModal();
+            
+            // Clear current track
+            if (trackPolyline) map.removeLayer(trackPolyline);
+            
+            // Draw track
+            const latlngs = track.points.map(p => [p.lat, p.lon]);
+            trackPolyline = L.polyline(latlngs, {
+                color: '#2196F3',
+                weight: 4,
+                opacity: 0.8
+            }).addTo(map);
+
+            map.fitBounds(trackPolyline.getBounds());
+            
+            // Add start/end markers
+            if (latlngs.length > 0) {
+                L.marker(latlngs[0], {
+                    icon: L.divIcon({
+                        html: '<div style="background: var(--primary); color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white; font-weight: bold;">🏁</div>',
+                        iconSize: [30, 30]
+                    })
+                }).addTo(map).bindPopup('نقطة البداية');
+
+                L.marker(latlngs[latlngs.length - 1], {
+                    icon: L.divIcon({
+                        html: '<div style="background: var(--danger); color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white; font-weight: bold;">🎯</div>',
+                        iconSize: [30, 30]
+                    })
+                }).addTo(map).bindPopup('نقطة النهاية');
+            }
+
+            showNotification('تم العرض', `يتم عرض المسار: ${track.name}`);
+        }
+
+        function shareTrack(trackId) {
+            const track = savedTracks.find(t => t.id === trackId);
+            if (!track) return;
+
+            // Create GPX
+            const gpx = createGPX(track);
+            const blob = new Blob([gpx], { type: 'application/gpx+xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${track.name}.gpx`;
+            a.click();
+
+            showNotification('تم التصدير', `تم تصدير المسار بصيغة GPX`);
+        }
+
+        function deleteTrack(trackId) {
+            if (!confirm('هل تريد حذف هذا المسار؟')) return;
+
+            savedTracks = savedTracks.filter(t => t.id !== trackId);
+            localStorage.setItem('tracks', JSON.stringify(savedTracks));
+            
+            showTracksModal(); // Refresh list
+            showNotification('تم الحذف', 'تم حذف المسار بنجاح');
+        }
+
+        function createGPX(track) {
+            return `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Desert Tracker">
+    <metadata>
+        <name>${track.name}</name>
+        <desc>${track.description}</desc>
+    </metadata>
+    <trk>
+        <name>${track.name}</name>
+        <trkseg>
+${track.points.map(p => `            <trkpt lat="${p.lat}" lon="${p.lon}">
+                <time>${new Date(p.timestamp).toISOString()}</time>
+            </trkpt>`).join('\n')}
+        </trkseg>
+    </trk>
+</gpx>`;
+        }
+
+        // ==================== UI HELPERS ====================
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+        }
+
+        function showNotification(title, message, type = 'success') {
+            const notification = document.getElementById('notification');
+            document.getElementById('notificationTitle').textContent = title;
+            document.getElementById('notificationMessage').textContent = message;
+            
+            notification.style.borderLeftColor = type === 'error' ? 'var(--danger)' : 
+                                                  type === 'warning' ? 'var(--accent)' : 
+                                                  'var(--primary)';
+            
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        function hideNotification() {
+            document.getElementById('notification').classList.remove('show');
+        }
+
+        function showLoading() {
+            document.getElementById('loading').classList.add('show');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').classList.remove('show');
+        }
+
+        // ==================== OTHER MODALS ====================
+        function showGroupsModal() {
+            showNotification('قريباً', 'ميزة المجموعات قيد التطوير', 'warning');
+            toggleSidebar();
+        }
+
+        function showStatsModal() {
+            const totalTracks = savedTracks.length;
+            const totalDist = savedTracks.reduce((sum, t) => sum + t.distance, 0);
+            const totalDur = savedTracks.reduce((sum, t) => sum + t.duration, 0);
+            
+            alert(`إحصائياتك:\n\nإجمالي المسارات: ${totalTracks}\nإجمالي المسافة: ${totalDist.toFixed(2)} كم\nإجمالي الوقت: ${Math.floor(totalDur / 60000)} دقيقة`);
+            toggleSidebar();
+        }
+
+        function showSettingsModal() {
+            showNotification('قريباً', 'صفحة الإعدادات قيد التطوير', 'warning');
+            toggleSidebar();
+        }
+
+        function showUpgradeModal() {
+            const plans = `
+📦 الخطط المتاحة:
+
+🥈 EXPLORER - 29 درهم/شهر
+• مسارات غير محدودة
+• تتبع جماعي (5 أشخاص)
+• بدون إعلانات
+
+🥇 PRO - 99 درهم/شهر
+• كل مميزات Explorer
+• تتبع جماعي (50 شخص)
+• خرائط offline
+• SOS متقدم
+• تكامل الساعات الذكية
+
+اختر خطتك المناسبة!`;
+            
+            alert(plans);
+        }
+
+        // ==================== PWA INSTALL ====================
+        function installApp() {
+            if (!deferredPrompt) {
+                showNotification('معلومة', 'التطبيق مثبت بالفعل أو المتصفح لا يدعم التثبيت', 'warning');
+                return;
+            }
+            
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === 'accepted') {
+                    showNotification('تم التثبيت', 'تم تثبيت التطبيق بنجاح!');
+                }
+                deferredPrompt = null;
+                document.getElementById('installBanner').classList.remove('show');
+            });
+        }
+        
+        function dismissInstallBanner() {
+            document.getElementById('installBanner').classList.remove('show');
+            localStorage.setItem('installBannerDismissed', 'true');
+        }
+
+        // ==================== START APP ====================
+        window.onload = initApp;
+    </script>
+</body>
+</html>
